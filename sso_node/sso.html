@@ -1,0 +1,321 @@
+<script type="text/javascript">
+    RED.nodes.registerType('sso_setting', node_config = {        
+        category: 'AFS',
+        color: '#F1948A',
+        
+        // Property definitions
+        defaults: {
+            name: {value:""},
+
+            // sso setting
+            sso_user: {value:""},
+            sso_password: {value:""}
+        },
+        
+        inputs:1,
+        outputs:1,
+        icon: "file.png",
+        label: function() {
+            return this.name||"sso_setting";
+        },
+
+
+        // when dialog is being built, call this function.
+        oneditprepare: function() {
+            var node = this;
+
+        },
+
+
+        // (over v0.18) when click delete button in dialog , call this function.
+        oneditdelete: function() {
+            var node = this;
+
+        },
+
+
+        // when dialog is saved, call this function.
+        oneditsave: function() {
+            var node = this;
+
+
+            // get each param defalut value
+            $(".app_param").each(function(index){
+                var param_name = $(this).attr("key");
+                param_name = param_name.toLowerCase();
+
+                // check input whether set value
+                if ( $(this).val()=="" ) {
+                    node[param_name] = $(this).attr("placeholder");   // get value from placeholder
+                    $(this).val(node[param_name]);    // set value back to input. because of Node-RED template.
+                }
+                else {
+                    node[param_name] = $(this).val();   // get input value
+                }
+
+            });
+
+        }
+
+    });
+
+
+
+/**
+ * Ajax request SSO node endpoint for getting sso token, afs credentials.
+ * 
+ * @ param   {node}  (object) current node config.
+ * @ param   {endpoint_url}  (string) endpoint for request.
+ * @ param   {req_headers}  (object) request headers for ajax to endpoint.
+ * @ param   {req_param}  (object) request body for ajax to endpoint.
+ * 
+ * @ return {resp_result}   (object) response ajax result.
+ */
+function afs_get_credential(node, endpoint_url, req_headers, req_param) {
+    // ajax result
+    var resp_result = {
+        status_code: 0,
+        msg: ""
+    };
+
+
+    $.ajax({
+        async: false,
+        method: "POST",
+        headers: req_headers,
+        
+        url: endpoint_url,
+        data: JSON.stringify(req_param), // trans to json
+
+        success: function(data, textStatus, xhr){
+            resp_result["status_code"] = 200;
+            resp_result["msg"] = data;
+        },
+
+        error: function(xhr, textStatus, exception){
+            resp_result["status_code"] = xhr.status;
+            resp_result["msg"] = xhr.responseJSON;
+        }
+    });
+
+
+    return resp_result;
+}
+
+
+
+/**
+ * Create HTML selector for selecting serive name.
+ * 
+ * @ param  {node}  (object) current node config.
+ * @ param  {data}  (json object) json object about afs credentials.
+ * 
+ * @ return {str_html}  (string) HTML about options in selector.
+ */
+function create_selector_service_name(node, data) {
+    var arr_service_name = [];  // service name list
+    var str_html = "<option value='0'>--select--</option>";  // append selector HTML
+
+
+    // get all service name
+    if ( data!=null || data!=undefined ) {
+        // parse credentials data
+        data.forEach(function(elem){
+            arr_service_name.push(elem["name"]);
+        });
+    }
+    else {
+        return str_html;
+    }
+
+
+    // create options HTML about service name
+    str_html = "<option value='0'>--select--</option>";
+    arr_service_name.forEach(function(elem){
+        str_html = str_html + "<option value='" + elem +"'>" + elem + "</option>";
+    });
+
+
+    return str_html;
+}
+
+
+
+/**
+ * Set property about selected options about service name.
+ * 
+ * @ param  {node}  (object) current node config.
+ * 
+ * @ return {bool}  selected item is success. (true: success, false: fail)
+ */
+function select_service_name(node) {
+    var obj_jq = $("#node-input-service_name option[value='" + node.service_name + "']");   // get selected options
+
+
+    // check jquery object is not null.
+    if (obj_jq.length==0) {
+        RED.notify("Service name not exists.","notice");
+
+        return false;
+    }
+    else {
+        // set selected item from defaluts value
+        obj_jq.attr("selected","selected");
+
+        return true;
+    }
+
+}
+
+
+
+/**
+ * Create HTML selector for selecting serive key.
+ * 
+ * @ param  {node}  (object) current node config.
+ * @ param  {data}  (json object) json object about afs credentials.
+ * @ param  {service_name}  (string) selected service name.
+ * 
+ * @ return {str_html}  (string) HTML about options in selector.
+ */
+function create_selector_service_key(node, data, service_name) {
+    var arr_service_key = [];  // service key list
+    var str_html = "<option value='0'>--select--</option>";  // append selector HTML
+    var arr_key = null; // temp object store keys
+
+        
+    if ( (data!=null || data!=undefined) && 
+        ((service_name!="") && (typeof service_name!=="undefined")) ) {    
+        data.forEach(function(elem){
+            // find service name
+            if (service_name.localeCompare(elem.name)==0) {
+                // get all service keys name
+                elem.service_keys.forEach(function(item){
+                    arr_key = Object.keys(item);
+                    arr_service_key.push(arr_key[0]);   // array of service keys
+                });
+            }
+        });
+    }
+    else {
+        return str_html;
+    }
+
+
+    // create options HTML about service name
+    str_html = "<option value='0'>--select--</option>";
+    arr_service_key.forEach(function(elem){
+        str_html = str_html + "<option value='" + elem +"'>" + elem + "</option>";
+    });
+
+
+    return str_html;
+}
+
+
+
+/**
+ * Set property about selected options about service key.
+ * 
+ * @ param  {node}  (object) current node config.
+ * 
+ * @ return {bool}  selected item is success. (true: success, false: fail)
+ */
+ function select_service_key(node) {
+    var obj_jq = $("#node-input-service_key > option[value='" + node.service_key + "']");   // get selected options
+    var obj_jq_options = $("#node-input-service_key > option");   // get options list
+
+
+    // check jquery object is not null.
+    if (obj_jq_options.length<=1) {
+        RED.notify("Service key not exists.","notice");
+
+        return false;
+    }
+    else {
+        // set selected item from defaluts value
+        obj_jq.attr("selected","selected");
+
+        return true;
+    }
+
+}
+
+
+
+/**
+ * Bind selector(service name) change event.
+ * When service name changed, update service key list.
+ * And check how many service keys in this service instance.
+ * 
+ * @ param  {node}  current node config.
+ * @ param  {data_credentials}  afs credentials api response data. (list about service name, service key)
+ */
+function bind_service_name_change(node, data_credentials) {
+    // service_name change, update service_key
+    $("#node-input-service_name").change(function() {
+        var obj_this = $(this);
+
+        // set selector about service key
+        str_html_service_key = create_selector_service_key(node, data_credentials, obj_this.val()); // create options html about service key
+        $("#node-input-service_key").html(str_html_service_key); // set options html
+        select_service_key(node);  // selected options
+    });
+
+}
+
+
+
+
+    // add config param in defaults
+    // AFS config
+
+
+</script>
+
+
+
+<script type="text/x-red" data-template-name="sso_setting">
+    
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+
+    <!-- set request api -->
+    <hr align="middle"/>
+    <!-- --- -->
+
+
+    <!-- set default param -->
+    <div class="form-row">
+        <label style="width:auto;">Set Param</label>
+    </div>
+
+        <!-- add param -->
+        <div class="form-row">
+            <label for="node-input-sso_user"><i class="fa fa-sliders"></i> SSO User</label>
+            <input id="node-input-sso_user" class="app_param" type="text" placeholder="" key="sso_user">
+        </div>
+
+        <div class="form-row">
+            <label for="node-input-sso_password"><i class="fa fa-sliders"></i> SSO Password</label>
+            <input id="node-input-sso_password" class="app_param" type="password" placeholder="" key="sso_password">
+        </div>
+        <!-- --- -->
+
+    <hr align="middle"/>
+    <!-- --- -->
+
+
+</script>
+
+
+
+<script type="text/x-red" data-help-name="sso_setting">
+    <p>
+        This is SSO config setting.
+    </p>
+</script>
+

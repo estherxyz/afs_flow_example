@@ -1,0 +1,5 @@
+---
+applications:
+- name: firehose_influx
+  memory: 256MB
+  buildpack: python_buildpack

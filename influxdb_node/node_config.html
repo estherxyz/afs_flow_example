@@ -1,0 +1,184 @@
+<script type="text/javascript">
+    RED.nodes.registerType('firehose_influx', node_config = {        
+        category: 'AFS',
+        color: '#F1948A',
+        
+        // Property definitions (for export)
+        defaults: {
+            name: {value:""},
+
+            url: {value: ""},
+            _node_type: {value:"firehose"},  // node type
+
+            // sso token
+            sso_token: {value: ""},
+
+            // service credential
+            service_name: {value: "0"},  // service name
+            service_key: {value: "0"},   // service key name
+
+            query: {value:""}
+        },
+        
+        inputs:1,
+        outputs:1,
+        icon: "file.png",
+        label: function() {
+            return this.name||"firehose_influx";
+        },
+
+
+        // when dialog is being built, call this function.
+        oneditprepare: function() {
+            var node = this;
+
+
+            // --- filter sso node in this flow to get setting ---
+            var filter_sso = {
+                z: node["z"],   // current flow id
+                type: "sso_setting"
+            };
+            
+            var sso_node = null;    // first one of sso node in this flow
+            var arr_sso_node = RED.nodes.filterNodes(filter_sso);   // get all of sso node in current flow
+            if (arr_sso_node.length>0) {
+                sso_node = arr_sso_node[0];
+            }
+            else {
+                sso_node = null;
+            }
+            // --- --- ---
+
+
+            // --- get credentials ---
+            // ajax result
+            var result_sso_token = null;    // result about sso token
+            var result_afs_credentials = null;  // result abtou afs credentials
+            var str_html_service_name = "";  // html about service name
+            var str_html_service_key = "";  // html about service key
+            
+
+            // check key(sso_user, sso_password) in object
+            if ( (sso_node!=null) && 
+                (sso_node.hasOwnProperty("sso_user") && sso_node.hasOwnProperty("sso_password")) ) {                
+                // set request headers
+                req_headers = {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Accept": "application/json",
+                    "sso_user": sso_node["sso_user"],
+                    "sso_password": sso_node["sso_password"]
+                }
+                
+                // get sso token
+                result_sso_token = afs_get_credential(node, "/sso/token", req_headers, {}); 
+
+                
+                if (result_sso_token["status_code"]==200) {
+                    RED.notify("Authorization is success.","success");
+
+                    // set request headers
+                    req_headers = {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Accept": "application/json",
+                        "afs_instance_id": "",  // ***required
+                        "sso_token": result_sso_token["msg"]["accessToken"]
+                    }
+
+                    // get afs credentials
+                    result_afs_credentials = afs_get_credential(node, "/afs/credentials", req_headers, {});
+
+
+                    if (result_afs_credentials["status_code"]==200) {
+                        RED.notify("Get credential success.","success");
+                        console.log(result_afs_credentials["msg"]); // credentials
+
+                        // set selector about service name
+                        str_html_service_name = create_selector_service_name(node, result_afs_credentials["msg"]);    // create options html about service name
+                        $("#node-input-service_name").html(str_html_service_name); // set options html
+                        select_service_name(node);  // selected options
+
+                        // bind selector(service_name) change event, then update service key in selector.
+                        bind_service_name_change(node, result_afs_credentials["msg"]);
+
+                    }
+                    else {
+                        RED.notify(result_afs_credentials["msg"]["message"],"error");
+                    }
+                }
+                else {
+                    RED.notify(result_sso_token["msg"]["message"],"error");
+                }
+                
+            }
+
+            // --- --- ---
+        },
+
+
+        // when dialog is saved, call this function.
+        oneditsave: function() {
+            var node = this;
+
+        },
+
+    });
+
+
+
+
+    // AFS config
+
+
+</script>
+
+
+
+<script type="text/x-red" data-template-name="firehose_influx">
+    
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+
+    <!-- set request api -->
+
+    <hr align="middle"/>
+    <!-- --- -->
+
+
+    <!-- dynamic credential -->
+
+    <div class="form-row">
+        <label for="node-input-service_name"><i class="fa fa-database"></i> Service Name</label>
+        <select type="text" id="node-input-service_name" style="width:70%;">
+            <option value="0">--select--</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-service_key"><i class="fa fa-database"></i> Service Key</label>
+        <select type="text" id="node-input-service_key" style="width:70%;">
+            <option value="0">--select--</option>
+        </select>
+    </div>
+
+    <!-- --- -->
+
+
+    <!-- set request body -->
+    <div class="form-row">
+        <label for="node-input-query"><i class="fa fa-pencil"></i> Query</label>
+        <input type="text" id="node-input-query">
+    </div>
+    <!-- --- -->
+
+
+</script>
+
+
+
+<script type="text/x-red" data-help-name="firehose_influx">
+    <p>Influxdb Firehose for query data.</p>
+</script>
+

@@ -1,0 +1,7 @@
+requests
+influxdb
+configparser
+gunicorn
+pprint
+pandas
+flask
