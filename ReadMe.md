@@ -38,3 +38,9 @@ Node for getting SSO token.
 Example about getting file from S3.
 
 ---
+
+### afs
+
+Add this folder into project (./). Use this sdk instead of origin flow.py.
+
+---
