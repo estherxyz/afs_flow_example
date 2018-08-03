@@ -12,6 +12,7 @@
 `(PUT) /v1/{instance_id}/workspaces/{workspace_id}/analytics`
 
 + request headers：設定content的類型與SSO token。
+> **若使用Postman上傳zip檔案，不要帶入`Content-Type`的欄位。**
 ![api request headers](/img/upload_request_headers.png)
 
 + request headers：選擇要上傳檔案的zip。
