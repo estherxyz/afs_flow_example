@@ -17,5 +17,8 @@
 + request headers：選擇要上傳檔案的zip。
 ![api request body](/img/upload_request_body.png)
 
++ response result
+![api response](/img/upload_response.png)
+
 + instance_id、workspace_id：登入AFS portal之後的url中。
 ![afs url](/img/afs_url.png)
