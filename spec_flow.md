@@ -7,10 +7,10 @@
 + node_config.js
 
 ### HTML file必填內容的規格
-+ registerType()中的匿名函數，統一命名為`node_config`。AFS動態加入code需要使用。
++ registerType()中的匿名函數，統一命名為`node_config`。AFS動態加入code需要使用。`$NODE_NAME`的部分，帶入node名稱，可以參考sample code的寫法：將這個node命名為sample。
 > 第一個`<script></script>`區塊中
 ```
-RED.nodes.registerType('', node_config={})
+RED.nodes.registerType('$NODE_NAME', node_config={})
 ```
 
 + 在registerType()外的JS需要加上一段註解，讓AFS可以動態加入其他參數設定。
