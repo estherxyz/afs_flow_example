@@ -13,13 +13,13 @@
 
 + request headers：設定content的類型與SSO token。
 > **若使用Postman上傳zip檔案，不要帶入`Content-Type`的欄位。**
-![api request headers](/img/upload_request_headers.png)
+![api request headers](./img/upload_request_headers.png)
 
 + request headers：選擇要上傳檔案的zip。
-![api request body](/img/upload_request_body.png)
+![api request body](./img/upload_request_body.png)
 
 + response result
-![api response](/img/upload_response.png)
+![api response](./img/upload_response.png)
 
 + instance_id、workspace_id：登入AFS portal之後的url中。
-![afs url](/img/afs_url.png)
+![afs url](./img/afs_url.png)
