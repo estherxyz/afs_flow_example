@@ -62,7 +62,7 @@ Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find be
 
 + [AFS SDK](https://github.com/benchuang11046/afs) source code from Github.
 
-+ Install AFS SDK with specific version
++ Install AFS SDK with specific version. {$VERSION} need to change into specific version.
 ```
 $ pip install https://github.com/benchuang11046/afs/archive/{$VERSION}.zip
 ```
