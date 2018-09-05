@@ -33,8 +33,10 @@ Response body: 200
 #### Get SSO token
 Reference to SSO doc. Version is 1.5. Use sso host url.
 + Request: `/v1.5/auth/native`
+
 ![Request api](./img/get_token_request.png)
 + Response
+
 ![Response api](./img/get_token_response.png)
 
 
