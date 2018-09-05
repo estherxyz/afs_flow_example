@@ -83,7 +83,7 @@ _node_type = {value: "firehose"}
 ![download specific version](./img/github_download_link.png)
 
 + `requirements.txt` for build vendor
-`requirements.txt`中的內容為需要安裝的lib，以及AFS SDK。AFS SDK的部分為剛剛的下載連結。例如：
+`requirements.txt`中的內容為需要安裝的lib，以及AFS SDK。AFS SDK的部分為剛剛的下載連結。`requirements.txt`內容例如(安裝afs sdk, pandas)：
 ```
 https://github.com/benchuang11046/afs/archive/1.2.17.zip
 pandas
@@ -109,7 +109,7 @@ $ pip3 install --download vendor -r requirements.txt
 
 + modify `requirements.txt` for upload to AFS
 
-將`requirements.txt`中，AFS SDK原本為連結的部分，修改為afs。例如：
+將`requirements.txt`中，AFS SDK原本為連結的部分，修改為afs。`requirements.txt`內容例如(安裝afs sdk, pandas)：
 ```
 afs
 pandas
