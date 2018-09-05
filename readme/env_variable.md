@@ -125,7 +125,7 @@ Response body: success
 
 ### How to include in python api
 
-#### Include afs sdk in `main.py`.
+#### Include afs sdk in `main.py`
 
 ```python
 from afs.get_env import app_env 
