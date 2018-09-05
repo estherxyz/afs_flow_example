@@ -68,6 +68,7 @@ _node_type = {value: "firehose"}
 > + `main.py`需要安裝的python lib離線包。(在可以連外的環境，可以不帶該資料夾中的內容，但如果要publish到catalog中，仍需要帶)
 > + build vendor的方式可以參考[build vendor](#build-vendor)章節
 
+---
 
 ## Build vendor
 
