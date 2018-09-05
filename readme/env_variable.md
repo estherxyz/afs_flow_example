@@ -60,12 +60,16 @@ Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find be
 
 ### Get AFS SDK for python
 
-+ Download [AFS SDK](https://github.com/benchuang11046/afs) source code from Github.
++ [AFS SDK](https://github.com/benchuang11046/afs) source code from Github.
 
-+ Put directory: ./afs into your project.
++ Install AFS SDK with specific version
+```
+$ pip install https://github.com/benchuang11046/afs/archive/{$VERSION}.zip
+```
 
-![afs dir](./img/afs_dir.png)
-> `main.py` is api main function.
++ Build AFS SDK vendor
+
+Reference to character [spec-build vendor](./spec_flow.md#build-vendor).
 
 
 ### How to include in python api

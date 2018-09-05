@@ -65,12 +65,52 @@ _node_type = {value: "firehose"}
 > 運行`main.py`的指令。
 
 + ./vendor
-> `main.py`需要安裝的python lib離線包。(在可以連外的環境，可以不帶該資料夾中的內容，但如果要publish到catalog中，仍需要帶)
+> + `main.py`需要安裝的python lib離線包。(在可以連外的環境，可以不帶該資料夾中的內容，但如果要publish到catalog中，仍需要帶)
+> + build vendor的方式可以參考[build vendor](#build-vendor)章節
+
+
+## Build vendor
+
+### Build AFS-SDK with specific version
+
++ 切換AFS SDK為特定版本
+
+![select specific version](./img/github_clone_by_tag.png)
+
++ 取得AFS SDK特定版本的下載連結
+
+![download specific version](./img/github_download_link.png)
+
++ `requirements.txt` for build vendor
+`requirements.txt`中的內容為需要安裝的lib，以及AFS SDK。AFS SDK的部分為剛剛的下載連結。例如：
+```
+https://github.com/benchuang11046/afs/archive/1.2.17.zip
+pandas
+```
+
++ Build vendor with command line
 ```
 # 注意build vendor的python版本，要與runtime.txt中的相同
 $ cd {YOUR-APP-DIR}
 $ mkdir -p vendor
 
 # 注意python3對應使用的pip，需要使用pip3或是pip
-$ pip install --download vendor -r requirements.txt
+$ pip3 install --download vendor -r requirements.txt
 ```
+
++ 加入AFS SDK的whl
+
+先將資料夾./vendor中的`afs-1.2.17.zip`刪除，再到github上下載AFS SDK的whl放入./vendor中。
+
+![github releases page](./img/download_afs_whl_1.png)
+
+![download afs sdk whl](./img/download_afs_whl_2.png)
+
++ modify `requirements.txt` for upload to AFS
+
+將`requirements.txt`中，AFS SDK原本為連結的部分，修改為afs。例如：
+```
+afs
+pandas
+```
+
