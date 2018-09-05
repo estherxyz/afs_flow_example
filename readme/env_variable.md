@@ -6,26 +6,11 @@ with **AFS v1.2.17**
 
 ## How to use in Node-RED
 
-### Get define environment variable in HTML
-
-在前端中可以使用`_afs_param_obj`這個變數物件中，取得以下的變數資訊。
-
-+ _afs_host_url：當前訂閱AFS的host url。
-+ _afs_instance_id：當前訂閱AFS的space名稱。
-+ _node_host_url：當前訂閱AFS所使用的Node-RED的host url。
-+ _sso_host_url：當前訂閱AFS所使用的SSO認證host url。
-+ _rmm_host_url：當前訂閱AFS所使用的RMM的host url。
-
-前端使用的語言為Javascript，取用變數方式如下：
-```js
-// get _afs_host_url value and set into temp.
-var temp = _afs_param_obj["_afs_host_url"];
-```
-
-
 ### API
 
 #### (GET) /sso/env_var
+This api is in Node-RED (sso node). Use Node-RED host url.
+
 Request headers
 ```js
 {
@@ -45,70 +30,27 @@ Response body: 200
 ```
 
 
-#### (POST) /sso/token
-Request headers
-```js
-{
-    "Content-Type": "application/json; charset=utf-8",
-    "Accept": "application/json",
-    "sso_user": $SSO_USER,
-    "sso_password": $SSO_PASSWORD
-}
-```
+#### Get SSO token
+Reference to SSO doc. Version is 1.5. Use sso host url.
++ Request: `/v1.5/auth/native`
+![Request api](./img/get_token_request.png)
++ Response
+![Response api](./img/get_token_response.png)
 
-Response body: success
-> accessToken is value about sso token.
-```js
-{
-    "tokenType": $TOKEN_TYPE,
-    "accessToken": $TOKEN,
-    "expiresIn": $EXPIRES_IN,
-    "refreshToken": $REFRESH_TOKEN
-}
+
+#### Get service credential list
+Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find below api in "services" part.
+```
+# use afs host url
+(GET) /v1/{instance_id}/services
 ```
 
 
-#### (POST) /afs/credentials
-Request headers
-```js
-{
-    "Content-Type": "application/json; charset=utf-8",
-    "Accept": "application/json",
-    "sso_token": $SSO_TOKEN
-}
+#### Get other service host url
+Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find below api in "workspaces" part.
 ```
-
-Response body: success
-```js
-[
-    {
-        "name": $SERVICE_NAME_BY_USER,
-        "service": $SERVICE_NAME,
-        "service_keys": [
-            {
-                $CREDENTIAL_NAME: {
-                    $CREDENTIAL_INFO
-                }
-            },...
-        ]
-    },...
-]
-```
-
-
-#### (GET) /sso/rmm_url
-Request headers
-```js
-{
-    "Content-Type": "application/json"
-}
-```
-
-Response body: success
-```js
-{
-    "_rmm_host_url": $RMM_HOST_URL
-}
+# use afs host url
+(GET) /v1/{instance_id}/workspaces/{workspace_id}/env?auth_code={auth_code}
 ```
 
 
