@@ -77,8 +77,7 @@ Reference to character [spec-build vendor](./spec_flow.md#build-vendor).
 #### Include afs sdk in `main.py`
 
 ```python
-from afs.get_env import app_env 
-from afs.flow import flow
+from afs import flow
 ```
 
 #### Use flow object
