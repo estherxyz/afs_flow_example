@@ -63,6 +63,7 @@ Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find be
 + Download [AFS SDK](https://github.com/benchuang11046/afs) source code from Github.
 
 + Put directory: ./afs into your project.
+
 ![afs dir](./img/afs_dir.png)
 > `main.py` is about your api main function.
 
