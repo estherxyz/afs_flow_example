@@ -65,7 +65,7 @@ Reference to [AFS doc](https://portal-afs-develop.iii-arfa.com/swagger). Find be
 + Put directory: ./afs into your project.
 
 ![afs dir](./img/afs_dir.png)
-> `main.py` is about your api main function.
+> `main.py` is api main function.
 
 
 ### How to include in python api
