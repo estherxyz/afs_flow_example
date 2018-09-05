@@ -96,7 +96,7 @@ Response body: success
 ```
 
 
-#### "/sso/rmm_url
+#### (GET) /sso/rmm_url
 Request headers
 ```js
 {
