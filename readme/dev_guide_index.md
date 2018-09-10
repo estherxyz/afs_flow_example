@@ -3,6 +3,7 @@
 ## Content
 
 + [Spec for uploading to AFS](./spec_flow.md)
++ [Additional spec for firehose type](./firehose_spec.md)
 + [Upload app to AFS](./upload_app.md)
 + [Env variable](./env_variable.md)
     + [How to use in Node-RED](./env_variable.md#how-to-use-in-node-red)
