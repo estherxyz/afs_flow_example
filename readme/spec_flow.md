@@ -74,6 +74,8 @@ _node_type = {value: "firehose"}
 
 ### Build AFS-SDK with specific version
 
++ [AFS SDK (github)](https://github.com/benchuang11046/afs)
+
 + 切換AFS SDK為特定版本
 
 ![select specific version](./img/github_clone_by_tag.png)
