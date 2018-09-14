@@ -1,5 +1,5 @@
 <script type="text/javascript">
-    RED.nodes.registerType('sso_setting', node_config = {        
+    RED.nodes.registerType('sso_setting', sso_node_config = {        
         category: 'AFS',
         color: '#F1948A',
         
@@ -12,8 +12,8 @@
             sso_password: {value:""}
         },
         
-        inputs:1,
-        outputs:1,
+        inputs:0,
+        outputs:0,
         icon: "file.png",
         label: function() {
             return this.name||"sso_setting";
@@ -52,7 +52,6 @@
                 else {
                     node[param_name] = $(this).val();   // get input value
                 }
-
             });
 
         }
@@ -83,16 +82,23 @@ function afs_get_credential(node, endpoint_url, req_headers, req_param) {
         async: false,
         method: "POST",
         headers: req_headers,
+        timeout: 10000,
         
         url: endpoint_url,
         data: JSON.stringify(req_param), // trans to json
 
         success: function(data, textStatus, xhr){
+            console.log(textStatus);
+            // console.log(data);
+
             resp_result["status_code"] = 200;
             resp_result["msg"] = data;
         },
 
         error: function(xhr, textStatus, exception){
+            console.log("textStatus\t" + xhr.status);
+            // console.log(xhr.responseJSON);
+
             resp_result["status_code"] = xhr.status;
             resp_result["msg"] = xhr.responseJSON;
         }
@@ -109,10 +115,12 @@ function afs_get_credential(node, endpoint_url, req_headers, req_param) {
  * 
  * @ param  {node}  (object) current node config.
  * @ param  {data}  (json object) json object about afs credentials.
+ * @ param  {service_type} (string) get part of service for show in selector.
+ * @ param  {type_len}  (int) for substring length.
  * 
  * @ return {str_html}  (string) HTML about options in selector.
  */
-function create_selector_service_name(node, data) {
+function create_selector_service_name(node, data, service_type, type_len) {
     var arr_service_name = [];  // service name list
     var str_html = "<option value='0'>--select--</option>";  // append selector HTML
 
@@ -121,12 +129,19 @@ function create_selector_service_name(node, data) {
     if ( data!=null || data!=undefined ) {
         // parse credentials data
         data.forEach(function(elem){
-            arr_service_name.push(elem["name"]);
+            var tmp_str = elem["service"].substring(0,type_len);    // get part of service
+
+            if (tmp_str.localeCompare(service_type)==0) {
+                arr_service_name.push(elem["name"]);
+            }
+
+            // arr_service_name.push(elem["name"]);
         });
     }
     else {
         return str_html;
     }
+    // console.log(arr_service_name);
 
 
     // create options HTML about service name
@@ -200,6 +215,7 @@ function create_selector_service_key(node, data, service_name) {
     else {
         return str_html;
     }
+    // console.log(arr_service_key);
 
 
     // create options HTML about service name
@@ -266,6 +282,99 @@ function bind_service_name_change(node, data_credentials) {
 
 
 
+/**
+ * Ajax request SSO node endpoint for getting required param.
+ * 
+ * @ return {resp_result}   (object) response required param object.
+ */
+ function get_required_param() {
+    // ajax result
+    var resp_result = {
+        "_instance_id": "",
+        "_afs_host_url": "",
+        "_node_host_url": "",
+        "_sso_host_url": "",
+        "_rmm_host_url": ""
+    };
+
+    $.ajax({
+        async: false,
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        timeout: 6000,
+        url: "/sso/env_var",
+
+        success: function(data, textStatus, xhr){
+            console.log(textStatus);
+            // console.log(data);
+
+            resp_result = {
+                "_afs_instance_id": data["_afs_instance_id"],
+                "_afs_host_url": data["_afs_host_url"],
+                "_node_host_url": data["_node_host_url"],
+                "_sso_host_url": data["_sso_host_url"],
+                "_rmm_host_url": data["_rmm_host_url"]
+            };
+        },
+
+        error: function(xhr, textStatus, exception){
+            console.log("get required param error: " + xhr.status);
+            console.log(xhr.responseJSON);
+
+        }
+    });
+
+    return resp_result;
+}
+
+
+
+/**
+ * Ajax request SSO node endpoint for getting RMM url.
+ * 
+ * @ return {resp_result}   (object) response required param object.
+ */
+ function get_rmm_url() {
+    // ajax result
+    var resp_result = {
+        "_rmm_host_url": ""
+    };
+
+    $.ajax({
+        async: false,
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        timeout: 6000,
+        url: "/sso/rmm_url",
+
+        success: function(data, textStatus, xhr){
+            console.log(textStatus);
+            // console.log(data);
+
+            resp_result = {
+                "_rmm_host_url": data["_rmm_host_url"]
+            };
+        },
+
+        error: function(xhr, textStatus, exception){
+            console.log("get required param error: " + xhr.status);
+            console.log(xhr.responseJSON);
+        }
+    });
+
+    return resp_result;
+}
+
+
+
+var _afs_param_obj = get_required_param();  // get required param
+console.log(_afs_param_obj);
+
+
 
     // add config param in defaults
     // AFS config
@@ -279,7 +388,7 @@ function bind_service_name_change(node, data_credentials) {
     
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="text" id="node-input-name" placeholder="Name" maxlength="35">
     </div>
 
 
@@ -296,12 +405,12 @@ function bind_service_name_change(node, data_credentials) {
         <!-- add param -->
         <div class="form-row">
             <label for="node-input-sso_user"><i class="fa fa-sliders"></i> SSO User</label>
-            <input id="node-input-sso_user" class="app_param" type="text" placeholder="" key="sso_user">
+            <input id="node-input-sso_user" class="app_param" type="text" placeholder="" key="sso_user" maxlength="254">
         </div>
 
         <div class="form-row">
             <label for="node-input-sso_password"><i class="fa fa-sliders"></i> SSO Password</label>
-            <input id="node-input-sso_password" class="app_param" type="password" placeholder="" key="sso_password">
+            <input id="node-input-sso_password" class="app_param" type="password" placeholder="" key="sso_password" maxlength="20">
         </div>
         <!-- --- -->
 
