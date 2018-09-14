@@ -10,7 +10,8 @@ import pandas as pd
 
 from influxdb import InfluxDBClient
 
-from flow import *  # flow
+from afs import app_env # include init for get env variable
+from afs.flow import flow
 
 
 
@@ -46,15 +47,15 @@ def query_influxdb():
     # get param in request headers    
     headers_obj = {
         'flow_id': request.headers['flow_id'],
-        'node_id': request.headers['node_id'],
-        'host_url': request.headers['host_url']
+        'node_id': request.headers['node_id']
     }
 
     if headers_obj == None:
         return jsonify({
-            'EXEC_DESC': '63',
-            'message': 'request headers is wrong.'
+            'error_node': 'firehose', 
+            'error_msg': 'Request headers is wrong.'
         }), 400
+    # print(headers_obj)
 
 
     afs_flow = flow()    # init afs flow object
@@ -70,6 +71,12 @@ def query_influxdb():
 
     # get node config in Node-RED
     node_obj = afs_flow.get_node_item(afs_flow.current_node_id)
+
+    if node_obj==None:
+        return jsonify({
+            'error_node': str(afs_flow.current_node_id), 
+            'error_msg': 'Can not get node config.'
+        }), 400
     
 
     # get sso node config in Node-RED
@@ -81,6 +88,7 @@ def query_influxdb():
         }), 400
 
     sso_obj = afs_flow.get_node_item(sso_node_id, is_current_node=False)  # get sso node config in Node-RED
+    # print(sso_obj)
     
 
     # get sso token
@@ -118,17 +126,23 @@ def query_influxdb():
 
     if ( ('service_name' in node_obj and node_obj['service_name']!='0')
         and ('service_key' in node_obj and node_obj['service_key']!='0') ):
-        for item_service in afs_credentials:
-            # find credentials service name
-            if node_obj['service_name'] == item_service['name']:
-                # get key object array
-                for item_key in item_service['service_keys']:
-                    for key_name in item_key.keys():
-                        # find credentials service key
-                        if node_obj['service_key'] == key_name:
-                            # print(item_key[ node_obj['service_key'] ])
-                            obj_credential = item_key[ node_obj['service_key'] ]
-                            break
+        try:
+            for item_service in afs_credentials:
+                # find credentials service name
+                if node_obj['service_name'] == item_service['name']:
+                    # get key object array
+                    for item_key in item_service['service_keys']:
+                        for key_name in item_key.keys():
+                            # find credentials service key
+                            if node_obj['service_key'] == key_name:
+                                # print(item_key[ node_obj['service_key'] ])
+                                obj_credential = item_key[ node_obj['service_key'] ]
+                                break
+        except:
+            return jsonify({
+                'error_node': str(afs_flow.current_node_id),
+                'error_msg': 'Credentials param is error.'
+            }), 500
     else:
         return jsonify({
             'error_node': str(afs_flow.current_node_id), 
@@ -141,11 +155,21 @@ def query_influxdb():
             'error_node': str(afs_flow.current_node_id), 
             'error_msg': 'Service name or service key value did not map to credentials.'
         }), 400
+    # print(obj_credential)
 
 
     # connect influxdb
     client = InfluxDBClient(obj_credential['host'], obj_credential['port'], obj_credential['username'], obj_credential['password'], obj_credential['database'])
+    print('connection port: ' + str(obj_credential['port']))
+    print('connection username: ' + str(obj_credential['username']))
+    print('connection password: ' + str(obj_credential['password']))
+    print('connection database: ' + str(obj_credential['database']))
 
+
+    # get post json
+    req_obj = request.get_json(silent=True)
+    print(req_obj)
+    
 
     # set param
     query = node_obj['query']
@@ -155,8 +179,8 @@ def query_influxdb():
     # query
     if (query==None or query==''):
         return jsonify({
-            'EXEC_DESC': '62',
-            'message': 'query string is none.'
+            'error_node': str(afs_flow.current_node_id), 
+            'error_msg': 'Query string is none.'
         }), 400
     
     try:
@@ -166,8 +190,8 @@ def query_influxdb():
         traceback.print_exc()
 
         return jsonify({
-            'EXEC_DESC': '90',
-            'message': 'Script is fail.'
+            'error_node': str(afs_flow.current_node_id), 
+            'error_msg': 'Script is fail.'
         }), 500
 
 
@@ -179,17 +203,22 @@ def query_influxdb():
     else:
         columns = []
         values = []
-        
     
     df = pd.DataFrame(values, columns=columns)
     df_dict = df.to_dict()  # trans to python dict
-    error_node, error_msg = afs_flow.exe_next_node(data=df_dict, next_list=None, debug=True)
+    # print(df_dict)
+    # print( json.dumps({'data': df_dict}) )
 
+    
+    error_node, error_msg = afs_flow.exe_next_node(data={'data': df_dict}, next_list=None, debug=True)
 
-    return jsonify({'error_node': str(error_node), 'error_msg': str(error_msg)}), 200
+    if error_node=='0' :
+        return jsonify({'status_code': '0'}), 200
+    else :
+        return jsonify({'error_node': str(error_node), 'error_msg': str(error_msg)}), 500
+
 
 
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
-

@@ -1,5 +1,5 @@
 ---
 applications:
-- name: firehose_influx
-  memory: 256MB
+- name: influxdb_query
+  memory: 512MB
   buildpack: python_buildpack

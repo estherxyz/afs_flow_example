@@ -1,4 +1,3 @@
-# -*-coding:utf-8 -*-
 import datetime
 import time
 import json
@@ -8,50 +7,61 @@ import os, sys
 import pandas as pd
 
 
-
-class flow:
-    mode = None # mode for switch data and constrant
-        # {parser, node}
-    mode_type = {
-        'parser': 'parser',
-        'node': 'node'
-    }   # mode type for setting mode value
-
-    flow_id = None  # Node-RED flow id
-    flow_list = None  # Node-RED all nodes in flow
-    current_node_id = None  # Node-RED current node id
-    current_node_obj = None  # Node-RED current node config
-    host_url = None  # host url for Node-RED
-
-    sso_host_url = None # host url for sso
-    afs_host_url = None # host url for afs
-    afs_instance_id = None  # afs instance id
-
-    # message
-    ERR_MSG_NEXT_LIST_TYPE = '' # list of next node data type is error.
-    ERR_MSG_NUMBER_OF_FIREHOSE = '' # number of firehose is error. (spec: 1 firehose in 1 flow)
-    ERR_MSG_CONFIG_PARAM_NOT_FOUND = '' # config param is not found. (flow_id, node_id, host_url)
+from . import app_env
 
 
 
-    def __init__(self, mode='node'):
+class flow(object):
+    
+    def __init__(self, mode='node', env_obj={}):
         """
         Initialize.
+
+        :param  mode: (string) This node is parser or node. (default = node)
+            (parse, node)
+        :param  env_obj: (object: app_env) object for storing env variable. (default = {})
+        :param  instance_id: (sting) instance id. (default = None)
+        :param  afs_host_url: (string) afs host url. (default = None)
+        :param  sso_host_url: (string) sso host url. (default = None)
+        :param  node_host_url: (string) node host url. (default = None)
         """
         # set initial value
-        self.mode = mode;   # mode for switch data and constrant
+        self.mode = mode   # mode for switch data and constrant
+        self.mode_type = {
+            'parser': 'parser',
+            'node': 'node'
+        }   # mode type for setting mode value
 
         self.flow_id = None  # Node-RED flow id
         self.flow_list = None    # Node-RED all nodes in flow
         self.current_node_id = None  # Node-RED current node id
         self.current_node_obj = None # Node-RED current node config
-        self.host_url = None # host url for Node-RED
 
-        ### required
-        self.sso_host_url = ''   # host url for sso
-        self.afs_host_url = ''   # host url for afs
-        self.afs_instance_id = ''   # afs instance id
+        # set env variable
+        if bool(env_obj)==False:
+            self.env_obj = app_env()
+        else:
+            self.env_obj = env_obj
+        
+        self.afs_instance_id = self.env_obj.vcap_app.get('space_name')  # afs instance id
+        self.afs_workspace_id = self.env_obj.vcap_app.get('space_id')  # afs workspace id
+        self.afs_host_url = self.env_obj.afs_host_url    # host url for afs
+        self.sso_host_url = self.env_obj.sso_host_url    # host url for sso
+        self.node_host_url = self.env_obj.node_host_url  # host url for Node-RED
 
+        print("_flow instance_id: " + str(self.afs_instance_id))
+        print("_flow workspace_id: " + str(self.afs_workspace_id))
+        print("_flow afs_host_url: " + str(self.afs_host_url))
+        print("_flow sso_host_url: " + str(self.sso_host_url))
+        print("_flow node_host_url: " + str(self.node_host_url))
+
+        # set request timeout
+        self.req_timeout = {
+            'exe_next_node': 300,
+            'get_flow_list': 40,
+            'get_sso_token': 40,
+            'get_afs_credentials': 40
+        }
 
         # set message
         self.ERR_MSG_NEXT_LIST_TYPE = 'List of next node data type is error.'
@@ -65,19 +75,18 @@ class flow:
         Set config(class properties value) of flow.
 
         :param  obj: (dict) request headers.
-                    {flow_id, node_id, host_url}
+                    {flow_id, node_id}
 
         :return is_success: (bool) flow config information is setting success.
             True: setting success.
             False: lose config information.
         """
-
         # set flow_id
         if 'flow_id' in obj:
             self.flow_id = obj['flow_id']
         else:
-            raise AssertionError(self.ERR_MSG_CONFIG_PARAM_NOT_FOUND + ' flow_id')
-            return False
+            raise AttributeError(self.ERR_MSG_CONFIG_PARAM_NOT_FOUND + ' flow_id')
+            # return False
 
         # set node_id
         if 'node_id' in obj:
@@ -86,15 +95,9 @@ class flow:
             if self.mode==self.mode_type['parser']: # parser api
                 pass
             else:
-                raise AssertionError(self.ERR_MSG_CONFIG_PARAM_NOT_FOUND + ' node_id')
-                return False
+                raise AttributeError(self.ERR_MSG_CONFIG_PARAM_NOT_FOUND + ' node_id')
+                # return False
 
-        # set host url
-        if 'host_url' in obj:
-            self.host_url = obj['host_url']
-        else:
-            raise AssertionError(self.ERR_MSG_CONFIG_PARAM_NOT_FOUND + ' host_url')
-            return False
 
         return True
 
@@ -104,7 +107,7 @@ class flow:
         """
         Call Node-RED api to get flow list.
 
-        needed variable: flow_id, host_url
+        needed variable: flow_id, node_host_url
 
         generate: flow_list (list) all nodes in this flow_id.
             if not exist, variable will be None.
@@ -112,12 +115,12 @@ class flow:
         :return flow_list: (list) flow list from Node-RED
             (if can not get flow list from Node-RED api, return None.)
         """
-        if (self.host_url != None) and (self.flow_id != None):
-            url = self.host_url + 'flow/' + str(self.flow_id)
+        if (self.node_host_url != None) and (self.flow_id != None):
+            url = self.node_host_url + '/flow/' + str(self.flow_id)
 
             # get flow list
             try:
-                result = requests.get(url)  # GET
+                result = requests.get(url, timeout=self.req_timeout['get_flow_list'])  # GET
 
             except Exception as err:
                 self.flow_list = None
@@ -223,20 +226,21 @@ class flow:
         Generate headers object for request headers.
 
         :return obj: (dict) request headers object.
-            {Content-Type, flow_id, node_id, host_url}
+            {Content-Type, flow_id, node_id}
         """
         obj = {
             'Content-Type': 'application/json',
             'flow_id': self.flow_id,
-            'node_id': '',  # need to set
-            'host_url': self.host_url
+            'node_id': '',   # need to set
+            'node_host_url': self.node_host_url + '/',
+            'host_url': self.node_host_url + '/'
         }
 
         return obj
 
 
 
-    def exe_next_node(self, data, next_list=None, debug=False):
+    def exe_next_node(self, data={}, next_list=None, debug=False):
         """
         Request next node api to execute.
         Dependency: get_node_item(), set_headers()
@@ -263,10 +267,13 @@ class flow:
                 return error_node, error_msg
 
         else:
-            next_list = self.current_node_obj['wires'][0]
+            if len(self.current_node_obj['wires']) > 0:    # not endpoint
+                next_list = self.current_node_obj['wires'][0]
+            else:   # endpoint
+                next_list = []
         
         headers_obj = self.set_headers()    # request headers
-        data = {'data': data}   # dataframe dict set value into key:data
+        #data = {'data': data}   # dataframe dict set value into key:data
 
 
         # POST to each next node
@@ -277,7 +284,7 @@ class flow:
             if 'url' in next_node_obj:
                 # request next node to execute
                 try:
-                    result = requests.post(next_node_obj['url'], headers=headers_obj, json=data)    # POST
+                    result = requests.post(next_node_obj['url'], headers=headers_obj, json=data, timeout=self.req_timeout['exe_next_node'])    # POST
 
                     if debug==True:
                         print(result.text)
@@ -343,7 +350,7 @@ class flow:
 
 
         try:
-            result = requests.post(sso_url, headers=headers_obj, json=req_body)    # POST
+            result = requests.post(sso_url, headers=headers_obj, json=req_body, timeout=self.req_timeout['get_sso_token'])    # POST
 
         except Exception as err:
             resp = str(err)
@@ -390,7 +397,7 @@ class flow:
 
 
         try:
-            result = requests.get(afs_url, headers=headers_obj) # GET
+            result = requests.get(afs_url, headers=headers_obj, timeout=self.req_timeout['get_afs_credentials']) # GET
 
         except Exception as err:
             resp = str(err)
@@ -412,17 +419,4 @@ class flow:
         resp = resp_json
         status = 200
         return resp, status
-
-
-
-
-    # ------
-    def get_flow_list_ab(self, result):
-        # set flow_list
-        if 'nodes' in result:
-            self.flow_list = result['nodes']
-        else:
-            raise AssertionError('Dict has no key name "node"')
-            self.flow_list = None
-    
 

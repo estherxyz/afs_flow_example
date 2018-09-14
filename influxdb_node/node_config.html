@@ -1,5 +1,5 @@
 <script type="text/javascript">
-    RED.nodes.registerType('firehose_influx', node_config = {        
+    RED.nodes.registerType('influxdb_query', node_config = {        
         category: 'AFS',
         color: '#F1948A',
         
@@ -16,15 +16,17 @@
             // service credential
             service_name: {value: "0"},  // service name
             service_key: {value: "0"},   // service key name
+            service_credentials: {value: ""},    // service credential list
+            feature_names: {value: []},  // (array) column list in database
 
             query: {value:""}
         },
         
-        inputs:1,
+        inputs:0,
         outputs:1,
         icon: "file.png",
         label: function() {
-            return this.name||"firehose_influx";
+            return this.name||"influxdb_query";
         },
 
 
@@ -74,13 +76,12 @@
 
                 
                 if (result_sso_token["status_code"]==200) {
-                    RED.notify("Authorization is success.","success");
+                    RED.notify("Authorization Success.","success");
 
                     // set request headers
                     req_headers = {
                         "Content-Type": "application/json; charset=utf-8",
                         "Accept": "application/json",
-                        "afs_instance_id": "",  // ***required
                         "sso_token": result_sso_token["msg"]["accessToken"]
                     }
 
@@ -89,11 +90,12 @@
 
 
                     if (result_afs_credentials["status_code"]==200) {
-                        RED.notify("Get credential success.","success");
+                        // RED.notify("Get service list success.","success");
                         console.log(result_afs_credentials["msg"]); // credentials
+                        node["service_credentials"] = result_afs_credentials["msg"];   // temp store feature_names
 
                         // set selector about service name
-                        str_html_service_name = create_selector_service_name(node, result_afs_credentials["msg"]);    // create options html about service name
+                        str_html_service_name = create_selector_service_name(node, result_afs_credentials["msg"], "influxdb", 8);    // create options html about service name
                         $("#node-input-service_name").html(str_html_service_name); // set options html
                         select_service_name(node);  // selected options
 
@@ -108,7 +110,6 @@
                 else {
                     RED.notify(result_sso_token["msg"]["message"],"error");
                 }
-                
             }
 
             // --- --- ---
@@ -119,25 +120,102 @@
         oneditsave: function() {
             var node = this;
 
+            
+            // --- get setting value ---
+            var service_list = node["service_credentials"];  // credential list
+            var service_name = $("#node-input-service_name").val(); // service name
+            var service_key = $("#node-input-service_key").val();   // service key
+            var str_query = $("#node-input-query").val();   // query string
+            var obj_credential = {};    // credential object
+            // --- --- ---
+
+
+            // --- get credential object ---
+            if ( (service_name.localeCompare("0")!=0) && (service_key.localeCompare("0")!=0) ) {
+                try {
+                    service_list.forEach(function(item_service) {
+                        // find credentials service name
+                        if (service_name.localeCompare(item_service["name"])==0) {
+                            // get key object array
+                            item_service["service_keys"].forEach(function(item_key){
+                                // key list
+                                Object.keys(item_key).forEach(function(key_name){
+                                    // find credentials service key
+                                    if (service_key.localeCompare(key_name)==0) {
+                                        obj_credential = item_key[service_key];
+                                    }
+                                });
+                            });
+
+                        }
+                    });
+                }
+                catch(err) {
+                    console.log("Parse service list error occur.");
+                    console.log(err);
+                    RED.notify("Get service name or service key error occur.", "error");
+                }
+            }
+            else {
+                console.log("Service name or service key is not exists.");
+                RED.notify("Service name or service key is not selected.", "error");
+            }
+
+            node["service_credentials"] = {};    // clean value of service_credentials
+            console.log(obj_credential);
+            // --- --- ---
+
+
+            // --- get column name ---
+            $.ajax({
+                method: "POST",
+                async: false,
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Accept": "application/json"
+                },
+                url: "/firehose/influxdb/get_column",
+                data: JSON.stringify({
+                    "credential": obj_credential,
+                    "query": str_query
+                }), // trans to json
+                
+                success: function(data, textStatus, xhr){
+                    console.log("get column success");
+                    // console.log(data);
+                    // console.log(textStatus);
+                    // console.log(xhr);
+                                        
+                    node["feature_names"] = data["message"]; // get column name list
+                },
+
+                error: function(xhr, textStatus, exception){
+                    console.log("get column fail");
+                    // console.log("get required param error: " + xhr.status);
+                    // console.log(xhr.responseJSON);
+
+                    RED.notify(xhr.responseJSON["message"], "error");
+                    node["feature_names"] = [];  // clean column name list
+                }
+            });
+            // --- --- ---
+
         },
 
     });
 
 
-
-
     // AFS config
-
 
 </script>
 
 
 
-<script type="text/x-red" data-template-name="firehose_influx">
+<script type="text/x-red" data-template-name="influxdb_query">
     
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="text" id="node-input-name" placeholder="Name" maxlength="35">
     </div>
 
 
@@ -148,6 +226,12 @@
 
 
     <!-- dynamic credential -->
+    <!-- <div class="form-row">
+        <label for="node-input-credential"><i class="fa fa-database"></i> Credential</label>
+        <select type="text" id="node-input-credential" style="width:70%;">
+            <option value="0">no item</option>
+        </select>
+    </div> -->
 
     <div class="form-row">
         <label for="node-input-service_name"><i class="fa fa-database"></i> Service Name</label>
@@ -178,7 +262,7 @@
 
 
 
-<script type="text/x-red" data-help-name="firehose_influx">
-    <p>Influxdb Firehose for query data.</p>
+<script type="text/x-red" data-help-name="influxdb_query">
+    <p>influxdb query node.</p>
 </script>
 
