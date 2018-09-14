@@ -53,6 +53,14 @@ var sso_host_url = format_url("{sso_host_url}");
 
 ---
 
+### training_dt_model
+
+> update: 2018-09-14
+
+Jupyter code for training dt model. This project will generate dt node by Online Code IDE.
+
+---
+
 ### s3_example
 
 Example about getting file from S3.
