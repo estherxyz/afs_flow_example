@@ -22,9 +22,10 @@ Node template for adding node into Node-RED. Add file into folder below.
 
 ### influxdb_node
 
-> update: 2018-09-14
+> **update: 2018-09-18**
 
 Example about developing influxdb node to AFS.
+`./afs` is part of AFS SDK with version 1.2.19.
 Include node for Node-RED, api for query influxdb. About spec can reference `spec_flow.md`.
 
 #### Notification

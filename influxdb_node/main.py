@@ -10,7 +10,7 @@ import pandas as pd
 
 from influxdb import InfluxDBClient
 
-from afs import app_env # include init for get env variable
+from afs.get_env import app_env
 from afs.flow import flow
 
 
@@ -203,13 +203,13 @@ def query_influxdb():
     else:
         columns = []
         values = []
-    
+        
     df = pd.DataFrame(values, columns=columns)
     df_dict = df.to_dict()  # trans to python dict
     # print(df_dict)
     # print( json.dumps({'data': df_dict}) )
 
-    
+
     error_node, error_msg = afs_flow.exe_next_node(data={'data': df_dict}, next_list=None, debug=True)
 
     if error_node=='0' :
