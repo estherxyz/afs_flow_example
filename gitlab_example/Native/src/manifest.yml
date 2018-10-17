@@ -1,0 +1,5 @@
+---
+applications:
+- name: company_Native
+  memory: 512MB
+  buildpack: python_buildpack

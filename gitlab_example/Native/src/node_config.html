@@ -1,0 +1,102 @@
+<script type="text/javascript">
+    RED.nodes.registerType('company_Native', node_config = {        
+        category: 'AFS',
+        color: '#AED6F1',
+        
+        // Property definitions
+        defaults: {
+            name: {value:""}
+        },
+        
+        inputs:1,
+        outputs:1,
+        icon: "file.png",
+        label: function() {
+            return this.name||"company_Native";
+        },
+        // when dialog is being built, call this function.
+        oneditprepare: function() {
+            var node = this;
+        },
+        // (over v0.18) when click delete button in dialog , call this function.
+        oneditdelete: function() {
+            var node = this;
+        },
+        // when dialog is saved, call this function.
+        oneditsave: function() {
+            var node = this;
+            // get each key column mapping value
+            $(".rename_key").each(function(index){
+                var key_name = "key_" + $(this).attr("key");
+                key_name = key_name.toLowerCase();
+                // check input whether set value
+                if ( $(this).val()=="" ) {
+                    node[key_name] = $(this).attr("placeholder");   // get value from placeholder
+                    $(this).val(node[key_name]);    // set value back to input. because of Node-RED template.
+                }
+                else {
+                    node[key_name] = $(this).val(); // get input value
+                }
+            });
+            // get each param defalut value
+            $(".app_param").each(function(index){
+                var param_name = $(this).attr("key");
+                param_name = param_name.toLowerCase();
+                // check input whether set value
+                if ( $(this).val()=="" ) {
+                    node[param_name] = $(this).attr("placeholder");   // get value from placeholder
+                    $(this).val(node[param_name]);    // set value back to input. because of Node-RED template.
+                }
+                else {
+                    node[param_name] = $(this).val();   // get input value
+                }
+            });
+        }
+    });
+    // add config param in defaults
+    // AFS config
+</script>
+
+
+
+<script type="text/x-red" data-template-name="company_Native">
+    
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <!-- set request api -->
+    <hr align="middle"/>
+    <!-- --- -->
+    <!-- set default param -->
+    <div class="form-row">
+        <label style="width:auto;">Set Param</label>
+    </div>
+        <!-- add param -->
+        <!-- <div class="form-row">
+            <label for="node-input-b"><i class="fa fa-sliders"></i> b</label>
+            <input id="node-input-b" class="app_param" type="text" placeholder="10" key="b">
+        </div> -->
+        <!-- --- -->
+    <hr align="middle"/>
+    <!-- --- -->
+    <!-- set column mapping -->
+    <div class="form-row">
+        <label style="width:auto;">Set Column Mapping</label>
+    </div>
+        <!-- add column setting -->
+        <!-- <div class="form-row">
+            <label for="node-input-a"><i class="fa fa-columns"></i> Map Column</label>
+            <input id="node-input-a" class="rename_key" type="text" placeholder="a" key="a">
+        </div> -->
+        <!-- --- -->
+    <!-- --- -->
+</script>
+
+
+
+<script type="text/x-red" data-help-name="company_Native">
+    <p>
+        This is company_Native.
+    </p>
+</script>

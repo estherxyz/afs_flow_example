@@ -1,0 +1,11 @@
+jupyter
+run_jnb
+jupyter_kernel_gateway
+numpy
+pandas
+scikit-learn
+influxdb
+requests
+scipy
+urllib3
+afs
